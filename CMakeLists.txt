@@ -4,6 +4,13 @@ project(fishies LANGUAGES CXX CUDA)
 set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
+# Disable everything we don't need
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+
+add_subdirectory(external/glfw)
+
 add_executable(fishies
     src/main.cu
 )
@@ -12,10 +19,14 @@ target_compile_options(fishies PRIVATE
     $<$<COMPILE_LANGUAGE:CUDA>:-Xptxas=-v>
     $<$<COMPILE_LANGUAGE:CUDA>:-lineinfo>
     $<$<COMPILE_LANGUAGE:CUDA>:-O3>
-    $<$<COMPILE_LANGUAGE:CUDA>:-DFORMATTING> # remove to disable console formatting
-    $<$<COMPILE_LANGUAGE:CUDA>:-DINTRIN> # remove to disable intrinsics usage (if it doesn't compile on old machines)
 )
 
 set_target_properties(fishies PROPERTIES
     CUDA_SEPARABLE_COMPILATION ON
 )
+
+target_link_libraries(fishies PRIVATE glfw)
+
+find_package(OpenGL REQUIRED)
+target_link_libraries(fishies PRIVATE OpenGL::GL)
+
