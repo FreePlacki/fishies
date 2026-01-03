@@ -102,7 +102,7 @@ int main(int argc, char **argv) {
     glViewport(0, 0, w, h);
 
     Boids boids;
-    boids_init(&boids, 100);
+    boids_init(&boids, 1000);
 
     RenderBoid *render_boids =
         (RenderBoid *)malloc(boids.count * sizeof(RenderBoid));
@@ -145,10 +145,25 @@ int main(int argc, char **argv) {
     GLuint shader_program = create_shader_program();
 
     double last_time = glfwGetTime();
+    double last_fps_update = last_time;
+    int n_frames = 0;
     while (!glfwWindowShouldClose(window)) {
         double now = glfwGetTime();
         float dt = (float)(now - last_time);
         last_time = now;
+        n_frames++;
+
+        // Update FPS every 0.25 seconds
+        if (now - last_fps_update >= 0.25) {
+            double fps = n_frames / (now - last_fps_update);
+
+            char title[128];
+            snprintf(title, sizeof(title), "Fishies (%.1f FPS)", fps);
+            glfwSetWindowTitle(window, title);
+
+            n_frames = 0;
+            last_fps_update = now;
+        }
 
         boids_update(&boids, dt);
         boids_pack_positions(&boids, render_boids);
