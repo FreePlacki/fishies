@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(fishies LANGUAGES CXX CUDA)
+project(fishies LANGUAGES C CXX CUDA)
 
 set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
@@ -26,6 +26,11 @@ set_target_properties(fishies PROPERTIES
 )
 
 target_link_libraries(fishies PRIVATE glfw)
+
+add_library(glad external/glad/src/glad.c)
+target_include_directories(glad PUBLIC external/glad/include)
+
+target_link_libraries(fishies PRIVATE glad)
 
 find_package(OpenGL REQUIRED)
 target_link_libraries(fishies PRIVATE OpenGL::GL)
