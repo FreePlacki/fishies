@@ -1,5 +1,6 @@
 #define GLFW_INCLUDE_NONE
 #include "boids.cu"
+#include "boids_gpu.cu"
 #include "shaders.cu"
 #include <GLFW/glfw3.h>
 #include <assert.h>
@@ -102,7 +103,7 @@ int main(int argc, char **argv) {
     glViewport(0, 0, w, h);
 
     Boids boids;
-    boids_init(&boids, 1000);
+    boids_init(&boids, 10000);
 
     RenderBoid *render_boids =
         (RenderBoid *)malloc(boids.count * sizeof(RenderBoid));
@@ -165,7 +166,7 @@ int main(int argc, char **argv) {
             last_fps_update = now;
         }
 
-        boids_update(&boids, dt);
+        boids_update_gpu(&boids, dt);
         boids_pack_positions(&boids, render_boids);
 
         glBindBuffer(GL_ARRAY_BUFFER, inst_vbo);
