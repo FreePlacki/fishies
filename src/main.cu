@@ -82,8 +82,7 @@ int main(int argc, char **argv) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow *window =
-        glfwCreateWindow(800, 600, "Fishies", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(800, 600, "Fishies", NULL, NULL);
     if (!window) {
         glfwTerminate();
         return 1;
@@ -116,9 +115,7 @@ int main(int argc, char **argv) {
     GLuint tri_vbo;
     glGenBuffers(1, &tri_vbo);
     glBindBuffer(GL_ARRAY_BUFFER, tri_vbo);
-    glBufferData(GL_ARRAY_BUFFER,
-                 sizeof(tri_vertices),
-                 tri_vertices,
+    glBufferData(GL_ARRAY_BUFFER, sizeof(tri_vertices), tri_vertices,
                  GL_STATIC_DRAW);
 
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void *)0);
@@ -128,20 +125,17 @@ int main(int argc, char **argv) {
     GLuint inst_vbo;
     glGenBuffers(1, &inst_vbo);
     glBindBuffer(GL_ARRAY_BUFFER, inst_vbo);
-    glBufferData(GL_ARRAY_BUFFER,
-                 boids.count * sizeof(RenderBoid),
-                 NULL,
+    glBufferData(GL_ARRAY_BUFFER, boids.count * sizeof(RenderBoid), NULL,
                  GL_DYNAMIC_DRAW);
 
     /* position */
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE,
-                          sizeof(RenderBoid), (void *)0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(RenderBoid),
+                          (void *)0);
     glEnableVertexAttribArray(1);
     glVertexAttribDivisor(1, 1);
 
     /* velocity */
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE,
-                          sizeof(RenderBoid),
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(RenderBoid),
                           (void *)(2 * sizeof(float)));
     glEnableVertexAttribArray(2);
     glVertexAttribDivisor(2, 1);
@@ -150,12 +144,17 @@ int main(int argc, char **argv) {
 
     GLuint shader_program = create_shader_program();
 
+    double last_time = glfwGetTime();
     while (!glfwWindowShouldClose(window)) {
+        double now = glfwGetTime();
+        float dt = (float)(now - last_time);
+        last_time = now;
+
+        boids_update(&boids, dt);
         boids_pack_positions(&boids, render_boids);
 
         glBindBuffer(GL_ARRAY_BUFFER, inst_vbo);
-        glBufferSubData(GL_ARRAY_BUFFER, 0,
-                        boids.count * sizeof(RenderBoid),
+        glBufferSubData(GL_ARRAY_BUFFER, 0, boids.count * sizeof(RenderBoid),
                         render_boids);
 
         glClearColor(0.05f, 0.05f, 0.08f, 1.0f);
