@@ -105,8 +105,8 @@ __host__ __device__ void rule_cohesion(Boids *b, int i, float dt) {
         float dy = wrap_delta(b->pos_y[j] - iy);
 
         if (dx * dx + dy * dy < COHESION_R2) {
-            cx += b->pos_x[j];
-            cy += b->pos_y[j];
+            cx += ix + dx;
+            cy += iy + dy;
             nei++;
         }
     }
