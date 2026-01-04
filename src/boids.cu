@@ -136,8 +136,14 @@ __host__ __device__ void rule_cohesion(Boids *b, int i, const BoidsParams *p,
     float steer_x = cx - ix;
     float steer_y = cy - iy;
 
-    b->vel_x[i] += steer_x * p->cohesion_strength * dt;
-    b->vel_y[i] += steer_y * p->cohesion_strength * dt;
+    float strength = p->cohesion_strength;
+    if (p->cursor_state == RMB &&
+        (p->cursor_x - ix) * (p->cursor_x - ix) +
+                (p->cursor_y - iy) * (p->cursor_y - iy) <
+            p->cursor_r * p->cursor_r)
+        strength *= -10.0f;
+    b->vel_x[i] += steer_x * strength * dt;
+    b->vel_y[i] += steer_y * strength * dt;
 }
 
 __host__ __device__ void rule_separation(Boids *b, int i, const BoidsParams *p,
@@ -204,6 +210,31 @@ __host__ __device__ void rule_alignment(Boids *b, int i, const BoidsParams *p,
     b->vel_y[i] += (avg_vy - b->vel_y[i]) * p->alignment_strength * dt;
 }
 
+__host__ __device__ void rule_cursor(Boids *b, int i, const BoidsParams *p,
+                                     float dt) {
+    if (p->cursor_state == NONE)
+        return;
+
+    const float r2 = p->cursor_r * p->cursor_r;
+
+    float ix = b->pos_x[i];
+    float iy = b->pos_y[i];
+    float cx = p->cursor_x;
+    float cy = p->cursor_y;
+
+    float dx = wrap_delta(cx - ix);
+    float dy = wrap_delta(cy - iy);
+
+    if (dx * dx + dy * dy > r2)
+        return;
+
+    float strength = p->cursor_strength;
+    if (p->cursor_state == RMB)
+        strength *= -5.0f;
+    b->vel_x[i] += (cx - ix) * strength * dt;
+    b->vel_y[i] += (cy - iy) * strength * dt;
+}
+
 __device__ __host__ void clamp_speed(float *vx, float *vy,
                                      const BoidsParams *p) {
     float v2 = (*vx) * (*vx) + (*vy) * (*vy);
@@ -228,6 +259,7 @@ void boids_update(Boids *b, const BoidsParams *p, float dt) {
         rule_cohesion(b, i, p, dt);
         rule_separation(b, i, p, dt);
         rule_alignment(b, i, p, dt);
+        rule_cursor(b, i, p, dt);
 
         clamp_speed(&b->vel_x[i], &b->vel_y[i], p);
 

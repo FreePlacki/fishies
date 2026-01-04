@@ -7,6 +7,12 @@
 typedef uint8_t u8;
 typedef uint32_t u32;
 
+typedef enum {
+    LMB,
+    RMB,
+    NONE,
+} CursorState;
+
 typedef struct {
     float cohesion_r;
     float cohesion_strength;
@@ -17,6 +23,12 @@ typedef struct {
 
     float min_speed;
     float max_speed;
+
+    CursorState cursor_state;
+    float cursor_x;
+    float cursor_y;
+    float cursor_r;
+    float cursor_strength; // + attract, - repel
 } BoidsParams;
 
 typedef struct {

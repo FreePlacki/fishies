@@ -59,12 +59,17 @@ static GLuint create_shader_program(void) {
     return prog;
 }
 
+int win_width = 800;
+int win_height = 600;
+
 static void framebuffer_size_callback(GLFWwindow *window, int w, int h) {
+    win_width = w;
+    win_height = h;
     glViewport(0, 0, w, h);
 }
 
 static void draw_ui(BoidsParams *p) {
-    ImGui::Begin("Boids");
+    ImGui::Begin("Params");
 
     ImGui::SeparatorText("Cohesion");
     ImGui::SliderFloat("Radius##cohesion", &p->cohesion_r, 0.01f, 0.2f);
@@ -106,7 +111,7 @@ int main(int argc, char **argv) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow *window = glfwCreateWindow(800, 600, "Fishies", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(win_width, win_height, "Fishies", NULL, NULL);
     if (!window) {
         glfwTerminate();
         return 1;
@@ -197,6 +202,8 @@ int main(int argc, char **argv) {
         .alignment_strength = 1.0f,
         .min_speed = 0.05f,
         .max_speed = 1.0f,
+        .cursor_r = 0.2f,
+        .cursor_strength = 1.0f,
     };
 
     double last_time = glfwGetTime();
@@ -219,6 +226,19 @@ int main(int argc, char **argv) {
             n_frames = 0;
             last_fps_update = now;
         }
+
+        // Update cursor state
+        double mx, my;
+        glfwGetCursorPos(window, &mx, &my);
+        params.cursor_x = (mx / win_width) * 2.0f - 1.0f;
+        params.cursor_y = 1.0f - (my / win_height) * 2.0f;
+        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+            params.cursor_state = LMB;
+        else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
+            params.cursor_state = RMB;
+        else
+            params.cursor_state = NONE;
+
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
