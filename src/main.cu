@@ -6,6 +6,9 @@
 #include <assert.h>
 #include <cuda_runtime.h>
 #include <glad/glad.h>
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -59,6 +62,15 @@ static void framebuffer_size_callback(GLFWwindow *window, int w, int h) {
     glViewport(0, 0, w, h);
 }
 
+static void draw_ui() {
+    ImGui::Begin("Boids");
+
+    float temp = 0.0f;
+    ImGui::SliderFloat("Perception", &temp, 0.01f, 0.2f);
+
+    ImGui::End();
+}
+
 void usage(char *pname) {
     fprintf(stderr, "Usage\t%s\n", pname);
     exit(1);
@@ -94,6 +106,16 @@ int main(int argc, char **argv) {
         fprintf(stderr, "GLAD init failed\n");
         return 1;
     }
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+
+    ImGuiIO &io = ImGui::GetIO();
+    (void)io;
+
+    ImGui::StyleColorsDark();
+
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 330");
 
     glfwSwapInterval(1);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
@@ -165,6 +187,11 @@ int main(int argc, char **argv) {
             n_frames = 0;
             last_fps_update = now;
         }
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        draw_ui();
 
         boids_update_gpu(&boids, dt);
         boids_pack_positions(&boids, render_boids);
@@ -179,6 +206,9 @@ int main(int argc, char **argv) {
         glUseProgram(shader_program);
         glBindVertexArray(vao);
         glDrawArraysInstanced(GL_TRIANGLES, 0, 3, boids.count);
+
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         glfwSwapBuffers(window);
         glfwPollEvents();
