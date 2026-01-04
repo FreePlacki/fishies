@@ -77,7 +77,7 @@ static void draw_ui(BoidsParams *p) {
     ImGui::SliderFloat("Strength##3", &p->alignment_strength, -1.0f, 1.0f);
     ImGui::SeparatorText("Other");
     ImGui::SliderFloat("Min Speed", &p->min_speed, 0.0f, 1.0f);
-    ImGui::SliderFloat("Max Speed", &p->max_speed, p->min_speed, 5.0f);
+    ImGui::SliderFloat("Max Speed", &p->max_speed, p->min_speed, 3.0f);
 
     ImGui::End();
 }
@@ -191,12 +191,12 @@ int main(int argc, char **argv) {
     BoidsParams params = {
         .cohesion_r = 0.07f,
         .cohesion_strength = 1.0f,
-        .separation_r = 0.03f,
+        .separation_r = 0.02f,
         .separation_strength = 1.0f,
         .alignment_r = 0.10f,
         .alignment_strength = 1.0f,
         .min_speed = 0.05f,
-        .max_speed = 3.0f,
+        .max_speed = 1.0f,
     };
 
     double last_time = glfwGetTime();

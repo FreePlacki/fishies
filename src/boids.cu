@@ -157,9 +157,12 @@ __host__ __device__ void rule_separation(Boids *b, int i, const BoidsParams *p,
         float dy = wrap_delta(iy - b->pos_y[j]);
         float dist2 = dx * dx + dy * dy;
 
+        float inv = 0.001f / dist2;
+        if (inv > 100.0f)
+            inv = 100.0f;
         if (dist2 > 0.0f && dist2 < r2) {
-            steer_x += dx;
-            steer_y += dy;
+            steer_x += dx * inv;
+            steer_y += dy * inv;
         }
     }
 
@@ -201,8 +204,8 @@ __host__ __device__ void rule_alignment(Boids *b, int i, const BoidsParams *p,
     b->vel_y[i] += (avg_vy - b->vel_y[i]) * p->alignment_strength * dt;
 }
 
-__device__ __host__ __forceinline__ void clamp_speed(float *vx, float *vy,
-                                                     const BoidsParams *p) {
+__device__ __host__ void clamp_speed(float *vx, float *vy,
+                                     const BoidsParams *p) {
     float v2 = (*vx) * (*vx) + (*vy) * (*vy);
     if (v2 < 1e-6f)
         return;
