@@ -1,5 +1,6 @@
 #define GLFW_INCLUDE_NONE
 #include "boids.cu"
+#include "params.cu"
 #include "boids_gpu.cu"
 #include "shaders.cu"
 #include <GLFW/glfw3.h>
@@ -62,11 +63,21 @@ static void framebuffer_size_callback(GLFWwindow *window, int w, int h) {
     glViewport(0, 0, w, h);
 }
 
-static void draw_ui() {
+static void draw_ui(BoidsParams *p) {
     ImGui::Begin("Boids");
 
-    float temp = 0.0f;
-    ImGui::SliderFloat("Perception", &temp, 0.01f, 0.2f);
+    ImGui::SeparatorText("Cohesion");
+    ImGui::SliderFloat("Radius##cohesion", &p->cohesion_r, 0.01f, 0.2f);
+    ImGui::SliderFloat("Strength##1", &p->cohesion_strength, -1.0f, 1.0f);
+    ImGui::SeparatorText("Separation");
+    ImGui::SliderFloat("Radius##2", &p->separation_r, 0.01f, 0.2f);
+    ImGui::SliderFloat("Strength##2", &p->separation_strength, -1.0f, 1.0f);
+    ImGui::SeparatorText("Alignment");
+    ImGui::SliderFloat("Radius##3", &p->alignment_r, 0.01f, 0.2f);
+    ImGui::SliderFloat("Strength##3", &p->alignment_strength, -1.0f, 1.0f);
+    ImGui::SeparatorText("Other");
+    ImGui::SliderFloat("Min Speed", &p->min_speed, 0.0f, 1.0f);
+    ImGui::SliderFloat("Max Speed", &p->max_speed, p->min_speed, 5.0f);
 
     ImGui::End();
 }
@@ -167,6 +178,17 @@ int main(int argc, char **argv) {
 
     GLuint shader_program = create_shader_program();
 
+    BoidsParams params = {
+        .cohesion_r = 0.10f,
+        .cohesion_strength = 1.0f,
+        .separation_r = 0.05f,
+        .separation_strength = 1.0f,
+        .alignment_r = 0.15f,
+        .alignment_strength = 1.0f,
+        .min_speed = 0.05f,
+        .max_speed = 3.0f,
+    };
+
     double last_time = glfwGetTime();
     double last_fps_update = last_time;
     int n_frames = 0;
@@ -191,9 +213,9 @@ int main(int argc, char **argv) {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        draw_ui();
+        draw_ui(&params);
 
-        boids_update_gpu(&boids, dt);
+        boids_update_gpu(&boids, &params, dt);
         boids_pack_positions(&boids, render_boids);
 
         glBindBuffer(GL_ARRAY_BUFFER, inst_vbo);

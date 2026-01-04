@@ -1,6 +1,7 @@
 #ifndef BOIDS_H
 #define BOIDS_H
 
+#include "params.cu"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -87,11 +88,10 @@ __host__ __device__ void update_pos(Boids *b, int i, float dt) {
     b->pos_y[i] = wrap(b->pos_y[i] + b->vel_y[i] * dt);
 }
 
-#define COHESION_R 0.10f
-#define COHESION_R2 (COHESION_R * COHESION_R)
-#define COHESION_STRENGTH 1.0f
+__host__ __device__ void rule_cohesion(Boids *b, int i, const BoidsParams *p,
+                                       float dt) {
+    float r2 = p->cohesion_r * p->cohesion_r;
 
-__host__ __device__ void rule_cohesion(Boids *b, int i, float dt) {
     float cx = 0.0f;
     float cy = 0.0f;
     int nei = 0;
@@ -104,7 +104,7 @@ __host__ __device__ void rule_cohesion(Boids *b, int i, float dt) {
         float dx = wrap_delta(b->pos_x[j] - ix);
         float dy = wrap_delta(b->pos_y[j] - iy);
 
-        if (dx * dx + dy * dy < COHESION_R2) {
+        if (dx * dx + dy * dy < r2) {
             cx += ix + dx;
             cy += iy + dy;
             nei++;
@@ -119,15 +119,14 @@ __host__ __device__ void rule_cohesion(Boids *b, int i, float dt) {
     float steer_x = cx - ix;
     float steer_y = cy - iy;
 
-    b->vel_x[i] += steer_x * COHESION_STRENGTH * dt;
-    b->vel_y[i] += steer_y * COHESION_STRENGTH * dt;
+    b->vel_x[i] += steer_x * p->cohesion_strength * dt;
+    b->vel_y[i] += steer_y * p->cohesion_strength * dt;
 }
 
-#define SEPARATION_R 0.05f
-#define SEPARATION_R2 (SEPARATION_R * SEPARATION_R)
-#define SEPARATION_STRENGTH 1.0f
+__host__ __device__ void rule_separation(Boids *b, int i, const BoidsParams *p,
+                                         float dt) {
+    const float r2 = p->separation_r * p->separation_r;
 
-__host__ __device__ void rule_separation(Boids *b, int i, float dt) {
     float steer_x = 0.0f;
     float steer_y = 0.0f;
 
@@ -142,21 +141,20 @@ __host__ __device__ void rule_separation(Boids *b, int i, float dt) {
         float dy = wrap_delta(iy - b->pos_y[j]);
         float dist2 = dx * dx + dy * dy;
 
-        if (dist2 > 0.0f && dist2 < SEPARATION_R2) {
+        if (dist2 > 0.0f && dist2 < r2) {
             steer_x += dx;
             steer_y += dy;
         }
     }
 
-    b->vel_x[i] += steer_x * SEPARATION_STRENGTH * dt;
-    b->vel_y[i] += steer_y * SEPARATION_STRENGTH * dt;
+    b->vel_x[i] += steer_x * p->separation_strength * dt;
+    b->vel_y[i] += steer_y * p->separation_strength * dt;
 }
 
-#define ALIGNMENT_R 0.15f
-#define ALIGNMENT_R2 (ALIGNMENT_R * ALIGNMENT_R)
-#define ALIGNMENT_STRENGTH 1.0f
+__host__ __device__ void rule_alignment(Boids *b, int i, const BoidsParams *p,
+                                        float dt) {
+    const float r2 = p->alignment_r * p->alignment_r;
 
-__host__ __device__ void rule_alignment(Boids *b, int i, float dt) {
     float avg_vx = 0.0f;
     float avg_vy = 0.0f;
     int nei = 0;
@@ -171,7 +169,7 @@ __host__ __device__ void rule_alignment(Boids *b, int i, float dt) {
         float dx = wrap_delta(b->pos_x[j] - ix);
         float dy = wrap_delta(b->pos_y[j] - iy);
 
-        if (dx * dx + dy * dy < ALIGNMENT_R2) {
+        if (dx * dx + dy * dy < r2) {
             avg_vx += b->vel_x[j];
             avg_vy += b->vel_y[j];
             nei++;
@@ -183,37 +181,35 @@ __host__ __device__ void rule_alignment(Boids *b, int i, float dt) {
     avg_vx /= nei;
     avg_vy /= nei;
 
-    b->vel_x[i] += (avg_vx - b->vel_x[i]) * ALIGNMENT_STRENGTH * dt;
-    b->vel_y[i] += (avg_vy - b->vel_y[i]) * ALIGNMENT_STRENGTH * dt;
+    b->vel_x[i] += (avg_vx - b->vel_x[i]) * p->alignment_strength * dt;
+    b->vel_y[i] += (avg_vy - b->vel_y[i]) * p->alignment_strength * dt;
 }
 
-#define MIN_SPEED 0.5f
-#define MAX_SPEED 3.0f
-__device__ __host__ __forceinline__ void clamp_speed(float *vx, float *vy) {
+__device__ __host__ __forceinline__ void clamp_speed(float *vx, float *vy, const BoidsParams *p) {
     float v2 = (*vx) * (*vx) + (*vy) * (*vy);
     if (v2 < 1e-6f)
         return;
 
     float v = sqrtf(v2);
 
-    if (v < MIN_SPEED) {
-        float s = MIN_SPEED / v;
+    if (v < p->min_speed) {
+        float s = p->min_speed / v;
         *vx *= s;
         *vy *= s;
-    } else if (v > MAX_SPEED) {
-        float s = MAX_SPEED / v;
+    } else if (v > p->max_speed) {
+        float s = p->max_speed / v;
         *vx *= s;
         *vy *= s;
     }
 }
 
-void boids_update(Boids *b, float dt) {
+void boids_update(Boids *b, const BoidsParams *p, float dt) {
     for (int i = 0; i < b->count; i++) {
-        rule_cohesion(b, i, dt);
-        rule_separation(b, i, dt);
-        rule_alignment(b, i, dt);
+        rule_cohesion(b, i, p, dt);
+        rule_separation(b, i, p, dt);
+        rule_alignment(b, i, p, dt);
 
-        clamp_speed(&b->vel_x[i], &b->vel_y[i]);
+        clamp_speed(&b->vel_x[i], &b->vel_y[i], p);
 
         update_pos(b, i, dt);
     }
