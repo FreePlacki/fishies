@@ -189,11 +189,11 @@ int main(int argc, char **argv) {
     GLuint shader_program = create_shader_program();
 
     BoidsParams params = {
-        .cohesion_r = 0.10f,
+        .cohesion_r = 0.07f,
         .cohesion_strength = 1.0f,
-        .separation_r = 0.05f,
+        .separation_r = 0.03f,
         .separation_strength = 1.0f,
-        .alignment_r = 0.15f,
+        .alignment_r = 0.10f,
         .alignment_strength = 1.0f,
         .min_speed = 0.05f,
         .max_speed = 3.0f,

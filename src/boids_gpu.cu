@@ -51,6 +51,7 @@ void boids_update_gpu(Boids *b, const BoidsParams *p, float dt) {
     CUDA_CHECK(cudaMemcpy(d_boids.pos_y, b->pos_y, b->count * sizeof(float), cudaMemcpyHostToDevice));
     CUDA_CHECK(cudaMemcpy(d_boids.vel_x, b->vel_x, b->count * sizeof(float), cudaMemcpyHostToDevice));
     CUDA_CHECK(cudaMemcpy(d_boids.vel_y, b->vel_y, b->count * sizeof(float), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(d_boids.type, b->type, b->count * sizeof(u8), cudaMemcpyHostToDevice));
 
     boids_update_kernel<<<blocks, threads>>>(d_boids, dt);
     CUDA_CHECK(cudaDeviceSynchronize());
@@ -59,6 +60,7 @@ void boids_update_gpu(Boids *b, const BoidsParams *p, float dt) {
     CUDA_CHECK(cudaMemcpy(b->pos_y, d_boids.pos_y, b->count * sizeof(float), cudaMemcpyDeviceToHost));
     CUDA_CHECK(cudaMemcpy(b->vel_x, d_boids.vel_x, b->count * sizeof(float), cudaMemcpyDeviceToHost));
     CUDA_CHECK(cudaMemcpy(b->vel_y, d_boids.vel_y, b->count * sizeof(float), cudaMemcpyDeviceToHost));
+    CUDA_CHECK(cudaMemcpy(b->type, d_boids.type, b->count * sizeof(u8), cudaMemcpyDeviceToHost));
 
 cleanup:
     return;

@@ -114,8 +114,9 @@ __host__ __device__ void rule_cohesion(Boids *b, int i, const BoidsParams *p,
 
     float ix = b->pos_x[i];
     float iy = b->pos_y[i];
+    u8 ty = b->type[i];
     for (int j = 0; j < b->count; j++) {
-        if (i == j)
+        if (i == j || b->type[j] != ty)
             continue;
         float dx = wrap_delta(b->pos_x[j] - ix);
         float dy = wrap_delta(b->pos_y[j] - iy);
@@ -148,7 +149,6 @@ __host__ __device__ void rule_separation(Boids *b, int i, const BoidsParams *p,
 
     float ix = b->pos_x[i];
     float iy = b->pos_y[i];
-
     for (int j = 0; j < b->count; ++j) {
         if (i == j)
             continue;
@@ -177,9 +177,9 @@ __host__ __device__ void rule_alignment(Boids *b, int i, const BoidsParams *p,
 
     float ix = b->pos_x[i];
     float iy = b->pos_y[i];
-
+    u8 ty = b->type[i];
     for (int j = 0; j < b->count; ++j) {
-        if (i == j)
+        if (i == j || b->type[j] != ty)
             continue;
 
         float dx = wrap_delta(b->pos_x[j] - ix);

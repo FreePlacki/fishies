@@ -80,7 +80,6 @@ int config_parse(const char *fname, InitialConfig *cfg) {
         if (strcmp(key, "fish_per_type") == 0) {
             parse_boids_line(val, cfg);
         }
-        printf("%d\n", cfg->boids_per_type[2]);
     }
 
     fclose(f);
