@@ -16,21 +16,18 @@ const char *vs_src = "#version 330 core\n"
 const char *fs_src = "#version 330 core\n"
                      "flat in uint v_type;\n"
                      "out vec4 FragColor;\n"
+                     "vec3 hsv2rgb(vec3 c) {\n"
+                     "    vec4 K = vec4(1.0, 2.0/3.0, 1.0/3.0, 3.0);\n"
+                     "    vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);\n"
+                     "    return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);\n"
+                     "}\n"
                      "void main() {\n"
-                     "    if (v_type == 0u) {\n"
-                     "        FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
-                     "    }\n"
-                     "    else if (v_type == 1u) {\n"
-                     "        FragColor = vec4(0.0, 1.0, 0.0, 1.0);\n"
-                     "    }\n"
-                     "    else if (v_type == 2u) {\n"
-                     "        FragColor = vec4(0.0, 0.0, 1.0, 1.0);\n"
-                     "    }\n"
-                     "    else {FragColor = vec4(1.0, 1.0, 1.0, 1.0);}\n"
+                     "    float h = fract(float(v_type) * 0.61803398875);\n"
+                     "    vec3 color = hsv2rgb(vec3(h, 0.8, 0.95));\n"
+                     "    FragColor = vec4(color, 1.0);\n"
                      "}\n";
 
 #define TRIANGLE_SIZE 0.003f
-
 static const float tri_vertices[6] = {
     TRIANGLE_SIZE * 2.0f,  0.0f,  // tip
     -TRIANGLE_SIZE, TRIANGLE_SIZE, // back top
