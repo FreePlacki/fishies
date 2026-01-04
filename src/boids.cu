@@ -10,16 +10,22 @@ typedef struct {
     float *pos_y;
     float *vel_x;
     float *vel_y;
+    u8 *type;
     int count;
 } Boids;
 
 static float frand() { return (float)rand() / (float)RAND_MAX; }
 
-void boids_init(Boids *boids, int count) {
-    boids->pos_x = (float *)malloc(count * sizeof(float));
-    boids->pos_y = (float *)malloc(count * sizeof(float));
-    boids->vel_x = (float *)malloc(count * sizeof(float));
-    boids->vel_y = (float *)malloc(count * sizeof(float));
+void boids_init(Boids *boids, const InitialConfig *cfg) {
+    int total = 0;
+    for (int i = 0; i < cfg->type_count; i++)
+        total += cfg->boids_per_type[i];
+
+    boids->pos_x = (float *)malloc(total * sizeof(float));
+    boids->pos_y = (float *)malloc(total * sizeof(float));
+    boids->vel_x = (float *)malloc(total * sizeof(float));
+    boids->vel_y = (float *)malloc(total * sizeof(float));
+    boids->type = (u8 *)malloc(total * sizeof(u8));
 
     if (boids->pos_x == NULL || boids->pos_y == NULL || boids->vel_x == NULL ||
         boids->vel_y == NULL) {
@@ -27,13 +33,21 @@ void boids_init(Boids *boids, int count) {
         exit(1);
     }
 
-    boids->count = count;
+    boids->count = total;
 
-    for (int i = 0; i < count; ++i) {
+    int curr_type = 0;
+    int curr_type_count = 0;
+    for (int i = 0; i < total; ++i) {
         boids->pos_x[i] = frand() * 2.0f - 1.0f;
         boids->pos_y[i] = frand() * 2.0f - 1.0f;
         boids->vel_x[i] = 1.5f * (frand() * 2.0f - 1.0f);
         boids->vel_y[i] = 1.5f * (frand() * 2.0f - 1.0f);
+        boids->type[i] = curr_type;
+        curr_type_count++;
+        if (curr_type_count == cfg->boids_per_type[curr_type]) {
+            curr_type++;
+            curr_type_count = 0;
+        }
     }
 }
 
@@ -56,6 +70,7 @@ void boids_free(Boids *boids) {
 typedef struct {
     float px, py;
     float vx, vy;
+    u8 type;
 } RenderBoid;
 
 void boids_pack_positions(const Boids *b, RenderBoid *out) {
@@ -64,6 +79,7 @@ void boids_pack_positions(const Boids *b, RenderBoid *out) {
         out[i].py = b->pos_y[i];
         out[i].vx = b->vel_x[i];
         out[i].vy = b->vel_y[i];
+        out[i].type = b->type[i];
     }
 }
 
@@ -185,7 +201,8 @@ __host__ __device__ void rule_alignment(Boids *b, int i, const BoidsParams *p,
     b->vel_y[i] += (avg_vy - b->vel_y[i]) * p->alignment_strength * dt;
 }
 
-__device__ __host__ __forceinline__ void clamp_speed(float *vx, float *vy, const BoidsParams *p) {
+__device__ __host__ __forceinline__ void clamp_speed(float *vx, float *vy,
+                                                     const BoidsParams *p) {
     float v2 = (*vx) * (*vx) + (*vy) * (*vy);
     if (v2 < 1e-6f)
         return;

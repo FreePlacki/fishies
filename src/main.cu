@@ -1,7 +1,7 @@
 #define GLFW_INCLUDE_NONE
 #include "boids.cu"
-#include "params.cu"
 #include "boids_gpu.cu"
+#include "params.cu"
 #include "shaders.cu"
 #include <GLFW/glfw3.h>
 #include <assert.h>
@@ -135,8 +135,12 @@ int main(int argc, char **argv) {
     glfwGetFramebufferSize(window, &w, &h);
     glViewport(0, 0, w, h);
 
+    InitialConfig cfg;
+    if (!config_parse("config.ini", &cfg))
+        printf("Couldn't parse config, using defaults\n");
+
     Boids boids;
-    boids_init(&boids, 10000);
+    boids_init(&boids, &cfg);
 
     RenderBoid *render_boids =
         (RenderBoid *)malloc(boids.count * sizeof(RenderBoid));
@@ -173,6 +177,12 @@ int main(int argc, char **argv) {
                           (void *)(2 * sizeof(float)));
     glEnableVertexAttribArray(2);
     glVertexAttribDivisor(2, 1);
+
+    /* type */
+    glVertexAttribIPointer(3, 1, GL_UNSIGNED_BYTE, sizeof(RenderBoid),
+                          (void *)(4 * sizeof(float)));
+    glEnableVertexAttribArray(3);
+    glVertexAttribDivisor(3, 1);
 
     glBindVertexArray(0);
 
