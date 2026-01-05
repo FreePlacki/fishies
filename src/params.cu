@@ -13,6 +13,8 @@ typedef enum {
     NONE,
 } CursorState;
 
+#define MAX_TYPES 32
+
 typedef struct {
     float cohesion_r;
     float cohesion_strength;
@@ -23,17 +25,22 @@ typedef struct {
 
     float min_speed;
     float max_speed;
+} BoidTypeParams;
 
+typedef struct {
     CursorState cursor_state;
     float cursor_x;
     float cursor_y;
     float cursor_r;
     float cursor_strength; // + attract, - repel
+
+    BoidTypeParams type[MAX_TYPES];
+    u8 type_count;
 } BoidsParams;
 
 typedef struct {
     u8 type_count;
-    u32 boids_per_type[256];
+    u32 boids_per_type[MAX_TYPES];
 } InitialConfig;
 
 static char *trim(char *s) {
@@ -59,11 +66,35 @@ static int parse_boids_line(const char *value, InitialConfig *cfg) {
         if (p == end)
             break;
 
+        if (cfg->type_count == MAX_TYPES) {
+            return 0;
+        }
+
         cfg->boids_per_type[cfg->type_count++] = (u32)v;
         p = end;
     }
 
     return cfg->type_count > 0;
+}
+
+void params_default(BoidsParams *p, int types_count) {
+    BoidTypeParams params = {
+        .cohesion_r = 0.03f,
+        .cohesion_strength = 1.0f,
+        .separation_r = 0.01f,
+        .separation_strength = 1.0f,
+        .alignment_r = 0.04f,
+        .alignment_strength = 1.0f,
+        .min_speed = 0.10f,
+        .max_speed = 1.0f,
+    };
+    for (int i = 0; i < types_count; i++) {
+        p->type[i] = params;
+    }
+    p->type_count = types_count;
+
+    p->cursor_r = 0.2f;
+    p->cursor_strength = 1.0f;
 }
 
 int config_parse(const char *fname, InitialConfig *cfg) {
@@ -72,7 +103,7 @@ int config_parse(const char *fname, InitialConfig *cfg) {
 
     FILE *f = fopen(fname, "r");
     if (!f)
-        return 0;
+        goto invalid;
     cfg->type_count = 0;
 
     char line[512];
@@ -90,12 +121,23 @@ int config_parse(const char *fname, InitialConfig *cfg) {
         char *val = trim(eq + 1);
 
         if (strcmp(key, "fish_per_type") == 0) {
-            parse_boids_line(val, cfg);
+            if (!parse_boids_line(val, cfg))
+                goto invalid;
         }
     }
 
     fclose(f);
     return 1;
+invalid:
+    if (f)
+        fclose(f);
+
+    // default config
+    cfg->type_count = 3;
+    cfg->boids_per_type[0] = 1000;
+    cfg->boids_per_type[1] = 1000;
+    cfg->boids_per_type[2] = 1000;
+    return 0;
 }
 
 #endif /* PARAMS_H */

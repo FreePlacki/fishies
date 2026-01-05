@@ -1,6 +1,7 @@
 #define GLFW_INCLUDE_NONE
 #include "boids.cu"
 #include "boids_gpu.cu"
+#include "ui.cu"
 #include "params.cu"
 #include "shaders.cu"
 #include <GLFW/glfw3.h>
@@ -66,25 +67,6 @@ static void framebuffer_size_callback(GLFWwindow *window, int w, int h) {
     win_width = w;
     win_height = h;
     glViewport(0, 0, w, h);
-}
-
-static void draw_ui(BoidsParams *p) {
-    ImGui::Begin("Params");
-
-    ImGui::SeparatorText("Cohesion");
-    ImGui::SliderFloat("Radius##cohesion", &p->cohesion_r, 0.01f, 0.2f);
-    ImGui::SliderFloat("Strength##1", &p->cohesion_strength, -1.0f, 1.0f);
-    ImGui::SeparatorText("Separation");
-    ImGui::SliderFloat("Radius##2", &p->separation_r, 0.01f, 0.2f);
-    ImGui::SliderFloat("Strength##2", &p->separation_strength, -1.0f, 1.0f);
-    ImGui::SeparatorText("Alignment");
-    ImGui::SliderFloat("Radius##3", &p->alignment_r, 0.01f, 0.2f);
-    ImGui::SliderFloat("Strength##3", &p->alignment_strength, -1.0f, 1.0f);
-    ImGui::SeparatorText("Other");
-    ImGui::SliderFloat("Min Speed", &p->min_speed, 0.0f, 1.0f);
-    ImGui::SliderFloat("Max Speed", &p->max_speed, p->min_speed, 3.0f);
-
-    ImGui::End();
 }
 
 void usage(char *pname) {
@@ -193,18 +175,8 @@ int main(int argc, char **argv) {
 
     GLuint shader_program = create_shader_program();
 
-    BoidsParams params = {
-        .cohesion_r = 0.07f,
-        .cohesion_strength = 1.0f,
-        .separation_r = 0.02f,
-        .separation_strength = 1.0f,
-        .alignment_r = 0.10f,
-        .alignment_strength = 1.0f,
-        .min_speed = 0.05f,
-        .max_speed = 1.0f,
-        .cursor_r = 0.2f,
-        .cursor_strength = 1.0f,
-    };
+    BoidsParams params;
+    params_default(&params, cfg.type_count);
 
     double last_time = glfwGetTime();
     double last_fps_update = last_time;

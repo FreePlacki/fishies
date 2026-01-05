@@ -24,7 +24,7 @@ __global__ void boids_update_kernel(Boids b, float dt) {
     rule_alignment(&b, i, &d_params, dt);
     rule_cursor(&b, i, &d_params, dt);
 
-    clamp_speed(&b.vel_x[i], &b.vel_y[i], &d_params);
+    clamp_speed(&b, i, &d_params);
 
     update_pos(&b, i, dt);
 }

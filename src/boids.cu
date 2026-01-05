@@ -106,7 +106,8 @@ __host__ __device__ void update_pos(Boids *b, int i, float dt) {
 
 __host__ __device__ void rule_cohesion(Boids *b, int i, const BoidsParams *p,
                                        float dt) {
-    float r2 = p->cohesion_r * p->cohesion_r;
+    const u8 ty = b->type[i]; 
+    const float r2 = p->type[ty].cohesion_r * p->type[ty].cohesion_r;
 
     float cx = 0.0f;
     float cy = 0.0f;
@@ -114,7 +115,6 @@ __host__ __device__ void rule_cohesion(Boids *b, int i, const BoidsParams *p,
 
     float ix = b->pos_x[i];
     float iy = b->pos_y[i];
-    u8 ty = b->type[i];
     for (int j = 0; j < b->count; j++) {
         if (i == j || b->type[j] != ty)
             continue;
@@ -136,7 +136,7 @@ __host__ __device__ void rule_cohesion(Boids *b, int i, const BoidsParams *p,
     float steer_x = cx - ix;
     float steer_y = cy - iy;
 
-    float strength = p->cohesion_strength;
+    float strength = p->type[ty].cohesion_strength;
     if (p->cursor_state == RMB &&
         (p->cursor_x - ix) * (p->cursor_x - ix) +
                 (p->cursor_y - iy) * (p->cursor_y - iy) <
@@ -148,7 +148,8 @@ __host__ __device__ void rule_cohesion(Boids *b, int i, const BoidsParams *p,
 
 __host__ __device__ void rule_separation(Boids *b, int i, const BoidsParams *p,
                                          float dt) {
-    const float r2 = p->separation_r * p->separation_r;
+    const u8 ty = b->type[i];
+    const float r2 = p->type[ty].separation_r * p->type[ty].separation_r;
 
     float steer_x = 0.0f;
     float steer_y = 0.0f;
@@ -172,13 +173,15 @@ __host__ __device__ void rule_separation(Boids *b, int i, const BoidsParams *p,
         }
     }
 
-    b->vel_x[i] += steer_x * p->separation_strength * dt;
-    b->vel_y[i] += steer_y * p->separation_strength * dt;
+    float strength = p->type[ty].separation_strength;
+    b->vel_x[i] += steer_x * strength * dt;
+    b->vel_y[i] += steer_y * strength * dt;
 }
 
 __host__ __device__ void rule_alignment(Boids *b, int i, const BoidsParams *p,
                                         float dt) {
-    const float r2 = p->alignment_r * p->alignment_r;
+    const u8 ty = b->type[i];
+    const float r2 = p->type[ty].alignment_r * p->type[ty].alignment_r;
 
     float avg_vx = 0.0f;
     float avg_vy = 0.0f;
@@ -186,7 +189,6 @@ __host__ __device__ void rule_alignment(Boids *b, int i, const BoidsParams *p,
 
     float ix = b->pos_x[i];
     float iy = b->pos_y[i];
-    u8 ty = b->type[i];
     for (int j = 0; j < b->count; ++j) {
         if (i == j || b->type[j] != ty)
             continue;
@@ -206,8 +208,9 @@ __host__ __device__ void rule_alignment(Boids *b, int i, const BoidsParams *p,
     avg_vx /= nei;
     avg_vy /= nei;
 
-    b->vel_x[i] += (avg_vx - b->vel_x[i]) * p->alignment_strength * dt;
-    b->vel_y[i] += (avg_vy - b->vel_y[i]) * p->alignment_strength * dt;
+    float strength = p->type[ty].alignment_strength;
+    b->vel_x[i] += (avg_vx - b->vel_x[i]) * strength * dt;
+    b->vel_y[i] += (avg_vy - b->vel_y[i]) * strength * dt;
 }
 
 __host__ __device__ void rule_cursor(Boids *b, int i, const BoidsParams *p,
@@ -235,20 +238,23 @@ __host__ __device__ void rule_cursor(Boids *b, int i, const BoidsParams *p,
     b->vel_y[i] += (cy - iy) * strength * dt;
 }
 
-__device__ __host__ void clamp_speed(float *vx, float *vy,
-                                     const BoidsParams *p) {
+__device__ __host__ void clamp_speed(Boids *b, int i, const BoidsParams *p) {
+    float *vx = &b->vel_x[i];
+    float *vy = &b->vel_y[i];
     float v2 = (*vx) * (*vx) + (*vy) * (*vy);
     if (v2 < 1e-6f)
         return;
 
     float v = sqrtf(v2);
 
-    if (v < p->min_speed) {
-        float s = p->min_speed / v;
+    float min = p->type[b->type[i]].min_speed;
+    float max = p->type[b->type[i]].min_speed;
+    if (v < min) {
+        float s = min / v;
         *vx *= s;
         *vy *= s;
-    } else if (v > p->max_speed) {
-        float s = p->max_speed / v;
+    } else if (v > max) {
+        float s = max / v;
         *vx *= s;
         *vy *= s;
     }
@@ -261,7 +267,7 @@ void boids_update(Boids *b, const BoidsParams *p, float dt) {
         rule_alignment(b, i, p, dt);
         rule_cursor(b, i, p, dt);
 
-        clamp_speed(&b->vel_x[i], &b->vel_y[i], p);
+        clamp_speed(b, i, p);
 
         update_pos(b, i, dt);
     }
