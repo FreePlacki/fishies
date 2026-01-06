@@ -77,22 +77,22 @@ void draw_ui(BoidsParams *p) {
             BoidTypeParams *tp = &p->type[t];
 
             ImGui::SeparatorText("Cohesion");
-            ImGui::SliderFloat("Radius##coh", &tp->cohesion_r, 0.01f, 0.2f);
+            ImGui::SliderFloat("Radius##coh", &tp->cohesion_r, 0.0f, 0.2f);
             ImGui::SliderFloat("Strength##coh", &tp->cohesion_strength, -1.0f,
                                1.0f);
 
             ImGui::SeparatorText("Separation");
-            ImGui::SliderFloat("Radius##sep", &tp->separation_r, 0.01f, 0.2f);
+            ImGui::SliderFloat("Radius##sep", &tp->separation_r, 0.0f, 0.2f);
             ImGui::SliderFloat("Strength##sep", &tp->separation_strength, -1.0f,
                                1.0f);
 
             ImGui::SeparatorText("Alignment");
-            ImGui::SliderFloat("Radius##ali", &tp->alignment_r, 0.01f, 0.2f);
+            ImGui::SliderFloat("Radius##ali", &tp->alignment_r, 0.0f, 0.2f);
             ImGui::SliderFloat("Strength##ali", &tp->alignment_strength, -1.0f,
                                1.0f);
 
             ImGui::SeparatorText("Speed");
-            ImGui::SliderFloat("Min Speed", &tp->min_speed, 0.0f, 1.0f);
+            ImGui::SliderFloat("Min Speed", &tp->min_speed, 0.01f, 1.0f);
             ImGui::SliderFloat("Max Speed", &tp->max_speed, tp->min_speed,
                                3.0f);
         }
