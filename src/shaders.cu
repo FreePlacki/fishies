@@ -27,7 +27,7 @@ const char *fs_src = "#version 330 core\n"
                      "    FragColor = vec4(color, 1.0);\n"
                      "}\n";
 
-#define TRIANGLE_SIZE 0.003f
+#define TRIANGLE_SIZE 0.002f
 static const float tri_vertices[6] = {
     TRIANGLE_SIZE * 2.0f,  0.0f,  // tip
     -TRIANGLE_SIZE, TRIANGLE_SIZE, // back top
