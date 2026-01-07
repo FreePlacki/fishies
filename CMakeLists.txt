@@ -3,6 +3,7 @@ project(fishies LANGUAGES C CXX CUDA)
 
 set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+set(CMAKE_CUDA_ARCHITECTURES native)
 
 set(IMGUI_SRC
     external/imgui/imgui.cpp

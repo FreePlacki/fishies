@@ -9,7 +9,7 @@ Algorytm stada (#link("https://www.red3d.com/cwr/boids/")[boids]) opiera się na
 Dla każdej rybki $i$ rozważamy
 wszystkie rybki $j$ w odległości ograniczonej przez promień zdefiniowany dla danej zasady.
 
-1. Rozdzielność (separation) - zapobiegamy lokalnym zbiorowiskoam/kolizjom.
+1. Rozdzielność (separation) - zapobiegamy lokalnym zbiorowiskom/kolizjom.
 $ v_i <- v_i + k_s Delta t sum_(j != i) (x_i - x_j)/(|x_i - x_j|^2) $
 2. Spójność (cohesion) - dążenie do lokalnego środka masy
 $ v_i <- v_i + k_c Delta t (overline(x)_(j != i) - x_i) $
@@ -76,9 +76,6 @@ Zakładając, że promień widzenia rybki jest znacznie mniejszy od rozmiarów p
 możemy podzielić przestrzeń na kostki o krawędzi równej największemu promieniowi.
 Wtedy dla danej rybki uwzględniamy jedynie te, które są w jej kostce oraz w kostkach
 z nią graniczących.
-
-W takiej implementacji, dobrym pomysłem może okazać się wstępne posortowanie rybek
-po indeksach przypisanym im kostek, aby lepiej wykorzystać pamięć podręczną.
 
 == Dodatkowe reguły
 
