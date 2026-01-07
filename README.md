@@ -14,7 +14,7 @@ cmake -S . -B build
 cmake --build build --config Release
 ```
 
-Windows:
+Windows (VS Developer Command Prompt):
 ```bash
 cmake -S . -B build -G "Visual Studio 17 2022"
 cmake --build build --config Release
