@@ -85,7 +85,7 @@ void params_default(BoidsParams *p, int types_count) {
     params.separation_strength = 0.5f;
     params.alignment_r = 0.04f;
     params.alignment_strength = 1.0f;
-    params.min_speed = 0.20f;
+    params.min_speed = 0.25f;
     params.max_speed = 3.0f;
     for (int i = 0; i < types_count; i++) {
         p->type[i] = params;

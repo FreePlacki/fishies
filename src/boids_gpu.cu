@@ -87,121 +87,6 @@ __device__ __forceinline__ void update_pos(Boids *b, int i, float dt) {
     b->pos_y[i] = wrap(b->pos_y[i] + b->vel_y[i] * dt);
 }
 
-__device__ __forceinline__ void rule_cohesion(Boids *b, int i, int start, int count,
-                              int *cell_indices, float dt) {
-    const u8 ty = b->type[i];
-    const float r2 =
-        d_params.type[ty].cohesion_r * d_params.type[ty].cohesion_r;
-
-    float cx = 0.0f;
-    float cy = 0.0f;
-    int nei = 0;
-
-    float ix = b->pos_x[i];
-    float iy = b->pos_y[i];
-    for (int k = 0; k < count; ++k) {
-        int j = cell_indices[start + k];
-        if (j == i || b->type[j] != ty)
-            continue;
-        float dx = wrap_delta(b->pos_x[j] - ix);
-        float dy = wrap_delta(b->pos_y[j] - iy);
-
-        if (dx * dx + dy * dy < r2) {
-            cx += ix + dx;
-            cy += iy + dy;
-            nei++;
-        }
-    }
-
-    if (nei == 0)
-        return;
-    cx /= nei;
-    cy /= nei;
-
-    float steer_x = cx - ix;
-    float steer_y = cy - iy;
-
-    float strength = d_params.type[ty].cohesion_strength;
-    if (d_params.cursor_state == RMB &&
-        (d_params.cursor_x - ix) * (d_params.cursor_x - ix) +
-                (d_params.cursor_y - iy) * (d_params.cursor_y - iy) <
-            d_params.cursor_r * d_params.cursor_r)
-        strength *= -10.0f;
-    b->vel_x[i] += steer_x * strength * dt;
-    b->vel_y[i] += steer_y * strength * dt;
-}
-
-__device__ __forceinline__ void rule_separation(Boids *b, int i, int start, int count,
-                                int *cell_indices, float dt) {
-    const u8 ty = b->type[i];
-    const float r2 =
-        d_params.type[ty].separation_r * d_params.type[ty].separation_r;
-
-    float steer_x = 0.0f;
-    float steer_y = 0.0f;
-
-    float ix = b->pos_x[i];
-    float iy = b->pos_y[i];
-    for (int k = 0; k < count; ++k) {
-        int j = cell_indices[start + k];
-        if (j == i)
-            continue;
-
-        float dx = wrap_delta(ix - b->pos_x[j]);
-        float dy = wrap_delta(iy - b->pos_y[j]);
-        float dist2 = dx * dx + dy * dy;
-
-        float inv = 0.001f / dist2;
-        if (inv > 100.0f)
-            inv = 100.0f;
-        if (dist2 > 0.0f && dist2 < r2) {
-            steer_x += dx * inv;
-            steer_y += dy * inv;
-        }
-    }
-
-    float strength = d_params.type[ty].separation_strength;
-    b->vel_x[i] += steer_x * strength * dt;
-    b->vel_y[i] += steer_y * strength * dt;
-}
-
-__device__ __forceinline__ void rule_alignment(Boids *b, int i, int start, int count,
-                               int *cell_indices, float dt) {
-    const u8 ty = b->type[i];
-    const float r2 =
-        d_params.type[ty].alignment_r * d_params.type[ty].alignment_r;
-
-    float avg_vx = 0.0f;
-    float avg_vy = 0.0f;
-    int nei = 0;
-
-    float ix = b->pos_x[i];
-    float iy = b->pos_y[i];
-    for (int k = 0; k < count; ++k) {
-        int j = cell_indices[start + k];
-        if (j == i || b->type[j] != ty)
-            continue;
-
-        float dx = wrap_delta(b->pos_x[j] - ix);
-        float dy = wrap_delta(b->pos_y[j] - iy);
-
-        if (dx * dx + dy * dy < r2) {
-            avg_vx += b->vel_x[j];
-            avg_vy += b->vel_y[j];
-            nei++;
-        }
-    }
-
-    if (nei == 0)
-        return;
-    avg_vx /= nei;
-    avg_vy /= nei;
-
-    float strength = d_params.type[ty].alignment_strength;
-    b->vel_x[i] += (avg_vx - b->vel_x[i]) * strength * dt;
-    b->vel_y[i] += (avg_vy - b->vel_y[i]) * strength * dt;
-}
-
 __device__ __forceinline__ void rule_cursor(Boids *b, int i, float dt) {
     if (d_params.cursor_state == NONE)
         return;
@@ -248,15 +133,35 @@ __device__ __forceinline__ void clamp_speed(Boids *b, int i) {
     }
 }
 
-__global__ void boids_update_kernel(Boids b, int *d_cell_offsets,
-                                    int *d_cell_counts, int *d_cell_indices,
+__global__ void boids_update_kernel(Boids b,
+                                    const int *__restrict__ cell_offsets,
+                                    const int *__restrict__ cell_counts,
+                                    const int *__restrict__ cell_indices,
                                     float dt) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= b.count)
         return;
 
-    int cx = (int)((b.pos_x[i] - GRID_MIN) / GRID_SIZE);
-    int cy = (int)((b.pos_y[i] - GRID_MIN) / GRID_SIZE);
+    float ix = b.pos_x[i];
+    float iy = b.pos_y[i];
+    u8 ty = b.type[i];
+
+    int cx = (int)((ix - GRID_MIN) / GRID_SIZE);
+    int cy = (int)((iy - GRID_MIN) / GRID_SIZE);
+
+    float coh_r2 = d_params.type[ty].cohesion_r * d_params.type[ty].cohesion_r;
+    float sep_r2 =
+        d_params.type[ty].separation_r * d_params.type[ty].separation_r;
+    float ali_r2 =
+        d_params.type[ty].alignment_r * d_params.type[ty].alignment_r;
+
+    float coh_cx = 0.0f, coh_cy = 0.0f;
+    int coh_n = 0;
+
+    float sep_x = 0.0f, sep_y = 0.0f;
+
+    float ali_vx = 0.0f, ali_vy = 0.0f;
+    int ali_n = 0;
 
     for (int dy = -1; dy <= 1; ++dy) {
         for (int dx = -1; dx <= 1; ++dx) {
@@ -266,13 +171,62 @@ __global__ void boids_update_kernel(Boids b, int *d_cell_offsets,
                 continue;
 
             int cell = ny * GRID_DIM + nx;
-            int start = d_cell_offsets[cell];
-            int count = d_cell_counts[cell];
+            int start = cell_offsets[cell];
+            int count = cell_counts[cell];
 
-            rule_cohesion(&b, i, start, count, d_cell_indices, dt);
-            rule_separation(&b, i, start, count, d_cell_indices, dt);
-            rule_alignment(&b, i, start, count, d_cell_indices, dt);
+            for (int k = 0; k < count; ++k) {
+                int j = cell_indices[start + k];
+                if (j == i)
+                    continue;
+
+                float dxp = wrap_delta(b.pos_x[j] - ix);
+                float dyp = wrap_delta(b.pos_y[j] - iy);
+                float d2 = dxp * dxp + dyp * dyp;
+
+                // cohesion
+                if (d2 < coh_r2 && b.type[j] == ty) {
+                    coh_cx += ix + dxp;
+                    coh_cy += iy + dyp;
+                    coh_n++;
+                }
+
+                // separation
+                if (d2 < sep_r2) {
+                    float inv = min(0.001f / d2, 100.0f);
+                    sep_x -= dxp * inv;
+                    sep_y -= dyp * inv;
+                }
+
+                // alignment
+                if (d2 < ali_r2 && b.type[j] == ty) {
+                    ali_vx += b.vel_x[j];
+                    ali_vy += b.vel_y[j];
+                    ali_n++;
+                }
+            }
         }
+    }
+
+    if (coh_n > 0) {
+        coh_cx /= coh_n;
+        coh_cy /= coh_n;
+        float s = d_params.type[ty].cohesion_strength;
+        b.vel_x[i] += (coh_cx - ix) * s * dt;
+        b.vel_y[i] += (coh_cy - iy) * s * dt;
+    }
+
+    {
+        float s = d_params.type[ty].separation_strength;
+        b.vel_x[i] += sep_x * s * dt;
+        b.vel_y[i] += sep_y * s * dt;
+    }
+
+    if (ali_n > 0) {
+        ali_vx /= ali_n;
+        ali_vy /= ali_n;
+        float s = d_params.type[ty].alignment_strength;
+        b.vel_x[i] += (ali_vx - b.vel_x[i]) * s * dt;
+        b.vel_y[i] += (ali_vy - b.vel_y[i]) * s * dt;
     }
 
     rule_cursor(&b, i, dt);
