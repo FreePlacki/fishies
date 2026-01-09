@@ -29,6 +29,7 @@ __device__ __forceinline__ int cell_index(float x, float y) {
     return iy * GRID_DIM + ix;
 }
 
+// counts how many boids fall in each cell
 __global__ void grid_count_kernel(Boids b, int *cell_counts) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= b.count)
@@ -38,6 +39,7 @@ __global__ void grid_count_kernel(Boids b, int *cell_counts) {
     atomicAdd(&cell_counts[cell], 1);
 }
 
+// prefix sum cell counts to get cell offsets
 void compute_cell_offsets(int *counts, int *offsets) {
     static void *temp = NULL;
     static size_t temp_bytes = 0;
@@ -87,7 +89,7 @@ __device__ __forceinline__ void update_pos(Boids *b, int i, float dt) {
     b->pos_y[i] = wrap(b->pos_y[i] + b->vel_y[i] * dt);
 }
 
-__device__ __forceinline__ void rule_cursor(Boids *b, int i, float dt) {
+__device__ __forceinline__ void cursor_interaction(Boids *b, int i, float dt) {
     if (d_params.cursor_state == NONE)
         return;
 
@@ -106,9 +108,9 @@ __device__ __forceinline__ void rule_cursor(Boids *b, int i, float dt) {
 
     float strength = d_params.cursor_strength;
     if (d_params.cursor_state == RMB)
-        strength *= -5.0f;
-    b->vel_x[i] += (cx - ix) * strength * dt;
-    b->vel_y[i] += (cy - iy) * strength * dt;
+        strength *= -3.0f;
+    b->vel_x[i] += wrap_delta(cx - ix) * strength * dt;
+    b->vel_y[i] += wrap_delta(cy - iy) * strength * dt;
 }
 
 __device__ __forceinline__ void clamp_speed(Boids *b, int i) {
@@ -121,7 +123,7 @@ __device__ __forceinline__ void clamp_speed(Boids *b, int i) {
     float v = sqrtf(v2);
 
     float min = d_params.type[b->type[i]].min_speed;
-    float max = d_params.type[b->type[i]].min_speed;
+    float max = d_params.type[b->type[i]].max_speed;
     if (v < min) {
         float s = min / v;
         *vx *= s;
@@ -211,8 +213,10 @@ __global__ void boids_update_kernel(Boids b,
         coh_cx /= coh_n;
         coh_cy /= coh_n;
         float s = d_params.type[ty].cohesion_strength;
-        b.vel_x[i] += (coh_cx - ix) * s * dt;
-        b.vel_y[i] += (coh_cy - iy) * s * dt;
+        if (d_params.cursor_state == RMB)
+            s *= -1.0f;
+        b.vel_x[i] += wrap_delta(coh_cx - ix) * s * dt;
+        b.vel_y[i] += wrap_delta(coh_cy - iy) * s * dt;
     }
 
     {
@@ -229,7 +233,7 @@ __global__ void boids_update_kernel(Boids b,
         b.vel_y[i] += (ali_vy - b.vel_y[i]) * s * dt;
     }
 
-    rule_cursor(&b, i, dt);
+    cursor_interaction(&b, i, dt);
     clamp_speed(&b, i);
     update_pos(&b, i, dt);
 }

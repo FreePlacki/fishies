@@ -79,13 +79,13 @@ static int parse_boids_line(const char *value, InitialConfig *cfg) {
 
 void params_default(BoidsParams *p, int types_count) {
     BoidTypeParams params;
-    params.cohesion_r = 0.03f;
-    params.cohesion_strength = 1.0f;
-    params.separation_r = 0.01f;
-    params.separation_strength = 0.5f;
+    params.cohesion_r = 0.04f;
+    params.cohesion_strength = 0.1f;
+    params.separation_r = 0.003f;
+    params.separation_strength = 1.0f;
     params.alignment_r = 0.04f;
     params.alignment_strength = 1.0f;
-    params.min_speed = 0.25f;
+    params.min_speed = 0.20f;
     params.max_speed = 3.0f;
     for (int i = 0; i < types_count; i++) {
         p->type[i] = params;

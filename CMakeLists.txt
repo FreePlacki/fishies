@@ -35,8 +35,6 @@ add_executable(fishies
 )
 
 target_compile_options(fishies PRIVATE
-    $<$<COMPILE_LANGUAGE:CUDA>:-Xptxas=-v>
-    $<$<COMPILE_LANGUAGE:CUDA>:-lineinfo>
     $<$<COMPILE_LANGUAGE:CUDA>:-O3>
 )
 
