@@ -1,1 +1,0 @@
-- [ ] consider a single radius for all 3 rules (fish vision)

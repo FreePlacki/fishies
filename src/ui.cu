@@ -59,6 +59,8 @@ static void type_color(uint32_t type, float *r, float *g, float *b) {
 void draw_ui(BoidsParams *p) {
     ImGui::Begin("Params");
 
+    ImGui::SliderFloat("Cursor Radius", &p->cursor_r, 0.1f, 0.3f);
+    ImGui::SliderFloat("Cursor Strength", &p->cursor_strength, 0.5f, 5.0f);
     for (int t = 0; t < p->type_count; ++t) {
         float r, g, b;
         type_color(t, &r, &g, &b);

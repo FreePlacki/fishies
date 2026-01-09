@@ -1,9 +1,9 @@
 #define GLFW_INCLUDE_NONE
 #include "boids.cu"
 #include "boids_gpu.cu"
-#include "ui.cu"
 #include "params.cu"
 #include "shaders.cu"
+#include "ui.cu"
 #include <GLFW/glfw3.h>
 #include <assert.h>
 #include <cuda_runtime.h>
@@ -70,7 +70,7 @@ static void framebuffer_size_callback(GLFWwindow *window, int w, int h) {
 }
 
 void usage(char *pname) {
-    fprintf(stderr, "Usage\t%s\n", pname);
+    fprintf(stderr, "Usage\t%s [config.ini]\n", pname);
     exit(1);
 }
 
@@ -81,8 +81,12 @@ int main(int argc, char **argv) {
         fprintf(stderr, "CUDA device not available\n");
     }
 
-    if (argc != 1)
+    if (argc > 2)
         usage(argv[0]);
+
+    InitialConfig cfg;
+    if (!config_parse(argc > 1 ? argv[1] : "config.ini", &cfg))
+        printf("Couldn't parse config, using defaults\n");
 
     if (!glfwInit()) {
         fprintf(stderr, "GLFW init failed\n");
@@ -93,7 +97,8 @@ int main(int argc, char **argv) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow *window = glfwCreateWindow(win_width, win_height, "Fishies", NULL, NULL);
+    GLFWwindow *window =
+        glfwCreateWindow(win_width, win_height, "Fishies", NULL, NULL);
     if (!window) {
         glfwTerminate();
         return 1;
@@ -121,10 +126,6 @@ int main(int argc, char **argv) {
     int w, h;
     glfwGetFramebufferSize(window, &w, &h);
     glViewport(0, 0, w, h);
-
-    InitialConfig cfg;
-    if (!config_parse("config.ini", &cfg))
-        printf("Couldn't parse config, using defaults\n");
 
     Boids boids;
     boids_init(&boids, &cfg);
@@ -167,7 +168,7 @@ int main(int argc, char **argv) {
 
     /* type */
     glVertexAttribIPointer(3, 1, GL_UNSIGNED_BYTE, sizeof(RenderBoid),
-                          (void *)(4 * sizeof(float)));
+                           (void *)(4 * sizeof(float)));
     glEnableVertexAttribArray(3);
     glVertexAttribDivisor(3, 1);
 
@@ -206,7 +207,8 @@ int main(int argc, char **argv) {
         params.cursor_y = 1.0f - (my / win_height) * 2.0f;
         if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
             params.cursor_state = LMB;
-        else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
+        else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) ==
+                 GLFW_PRESS)
             params.cursor_state = RMB;
         else
             params.cursor_state = NONE;

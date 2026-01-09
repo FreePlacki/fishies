@@ -97,9 +97,6 @@ void params_default(BoidsParams *p, int types_count) {
 }
 
 int config_parse(const char *fname, InitialConfig *cfg) {
-    cfg->type_count = 1;
-    cfg->boids_per_type[0] = 1000;
-
     FILE *f = fopen(fname, "r");
     if (!f)
         goto invalid;
