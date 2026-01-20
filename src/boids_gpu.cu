@@ -44,14 +44,10 @@ void compute_cell_offsets(int *counts, int *offsets) {
     static void *temp = NULL;
     static size_t temp_bytes = 0;
 
+    if (!temp)
+        cudaMalloc(&temp, temp_bytes);
     cub::DeviceScan::ExclusiveSum(temp, temp_bytes, counts, offsets,
                                   GRID_DIM * GRID_DIM);
-
-    if (!temp) {
-        cudaMalloc(&temp, temp_bytes);
-        cub::DeviceScan::ExclusiveSum(temp, temp_bytes, counts, offsets,
-                                      GRID_DIM * GRID_DIM);
-    }
 }
 
 __global__ void grid_fill_kernel(Boids b, const int *cell_offsets,
