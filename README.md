@@ -1,3 +1,5 @@
+![](https://github.com/FreePlacki/fishies/blob/main/fishies_demo.gif)
+
 # Fishies
 
 [Boids](https://www.red3d.com/cwr/boids/) simulation using CUDA.
